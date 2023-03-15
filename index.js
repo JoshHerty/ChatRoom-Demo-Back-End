@@ -19,12 +19,14 @@ io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
   socket.on("join_room", (roomId) => {
+    io.to(roomId).emit("user_joined", `User joined: ${socket.id}`);
     socket.join(roomId);
-    console.log(`User ${socket.id} joined room ${roomId}`);
+    console.log(`${socket.id} has joined the room`);
   });
 
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
+    io.to(roomId).emit("user_left", `User left: ${socket.id}`);
     console.log(`User ${socket.id} left room ${roomId}`);
   });
 
@@ -34,6 +36,7 @@ io.on("connection", (socket) => {
     }
 
     socket.to(data.roomId).emit("receive_message", data.message);
+    console.log(data);
     console.log(
       `User ${socket.id} sent the message (${data.message.slice(
         0,
@@ -43,6 +46,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
+    io.emit("user_disconnected", `User Disconnected: ${socket.id}`);
+
     console.log(`User Disconnected: ${socket.id}`);
   });
 });
