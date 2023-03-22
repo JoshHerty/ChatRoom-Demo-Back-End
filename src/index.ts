@@ -1,15 +1,10 @@
-import * as express from "express";
+import express from "express";
+import cors from "cors";
 import * as http from "http";
-import * as cors from "cors";
 import { Server } from "socket.io";
 import ChatMessage from "./models/ChatMessage";
 import UserData from "./models/UserData";
-
-const currentTime = () => {
-  const now = new Date();
-
-  return now.toLocaleTimeString();
-};
+import { currentTime } from "./utils/functions";
 
 let currentRoomId = "";
 
@@ -26,9 +21,7 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket: any) => {
-  console.log("a user");
-  console.log(socket);
+io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
   socket.on("set_user_data", (userData: UserData) => {
@@ -94,6 +87,7 @@ io.on("connection", (socket: any) => {
   });
 });
 
-server.listen(3001, () => {
-  console.log(`listening on port 3001`);
+const port = process.env.PORT || 3001;
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
