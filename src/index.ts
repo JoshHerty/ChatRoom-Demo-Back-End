@@ -1,6 +1,6 @@
 import ChatMessage from "./models/ChatMessage";
 import UserData from "./models/UserData";
-import { io } from "./server";
+import { io, server } from "./server";
 import { avatarsInUse, currentTime } from "./utils/functions";
 
 let currentRoomId = "";
@@ -73,4 +73,9 @@ io.on("connection", (socket) => {
     avatarsInUse(socket.data.roomId);
     console.log(`User Disconnected: ${socket.id}`);
   });
+});
+
+const port = process.env.PORT || 3001;
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
