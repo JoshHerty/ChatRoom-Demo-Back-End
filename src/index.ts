@@ -1,37 +1,30 @@
-import express from "express";
-import cors from "cors";
-import * as http from "http";
-import { Server } from "socket.io";
 import ChatMessage from "./models/ChatMessage";
 import UserData from "./models/UserData";
-import { currentTime } from "./utils/functions";
+import { io } from "./server";
+import { avatarsInUse, currentTime } from "./utils/functions";
 
 let currentRoomId = "";
-
-const app = express();
-
-app.use(cors());
-
-const server = http.createServer(app);
-
-const io = new Server(server, {
-  cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"],
-  },
-});
 
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
   socket.on("set_user_data", (userData: UserData) => {
     socket.data = userData;
-    console.log(socket.data);
   });
 
   socket.on("join_room", (roomId: string) => {
     currentRoomId = roomId;
     socket.join(roomId);
+
+    avatarsInUse(currentRoomId);
+    // test
+    // const clients = io.sockets.adapter.rooms.get(roomId)?.size;
+    // console.log(`Number of clients in ${roomId}: ${clients}`);
+    // test
+  });
+
+  socket.on("check_avatars_in_use", (roomId: string) => {
+    avatarsInUse(roomId);
   });
 
   socket.on("choose_avatar", (avatar: string) => {
@@ -42,8 +35,8 @@ io.on("connection", (socket) => {
       currentTime: currentTime(),
     };
 
+    avatarsInUse(socket.data.roomId);
     io.to(currentRoomId).emit("user_joined", joinRoomMessage);
-    console.log(`${socket.id} has joined the room`);
   });
 
   socket.on("send_message", (data: ChatMessage) => {
@@ -52,16 +45,10 @@ io.on("connection", (socket) => {
     }
 
     socket.to(data.roomId).emit("receive_message", data);
-    console.log(
-      `User ${socket.id} sent the message (${data.message.slice(
-        0,
-        15
-      )}...) to room ${data.roomId}`
-    );
   });
 
   socket.on("leave_room", (roomId: string) => {
-    const leaveRoomMessage = {
+    const leaveRoomMessage: ChatMessage = {
       avatar: socket.data.avatar,
       userName: "",
       message: `User left: ${socket.data.userName}`,
@@ -70,6 +57,7 @@ io.on("connection", (socket) => {
 
     socket.leave(roomId);
     io.to(roomId).emit("user_left", leaveRoomMessage);
+    avatarsInUse(socket.data.roomId);
     console.log(`User ${socket.id} left room ${roomId}`);
   });
 
@@ -82,12 +70,7 @@ io.on("connection", (socket) => {
     };
 
     io.emit("user_disconnected", disconnectMessage);
-
+    avatarsInUse(socket.data.roomId);
     console.log(`User Disconnected: ${socket.id}`);
   });
-});
-
-const port = process.env.PORT || 3001;
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
 });
